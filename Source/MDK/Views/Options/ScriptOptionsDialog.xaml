@@ -31,6 +31,7 @@
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
         <Label Grid.Column="0" Grid.Row="0" Target="{Binding ElementName=ProjectComboBox}" Margin="2">Project</Label>
@@ -40,7 +41,7 @@
                          x:Name="OutputPathFolderBox"
                          Margin="2"
                          VerticalAlignment="Center"
-                         SelectedFolder="{Binding ActiveProject.OutputPath}"
+                         SelectedFolder="{Binding ActiveProject.Paths.OutputPath}"
                          ToolTip="The path where the final ingame scripts are generated"
                          DialogTitle="Please select the script output folder" />
 
@@ -51,7 +52,7 @@
             <CheckBox x:Name="TrimTypesCheckBox" 
                       Margin="2,8,2,2"
                       HorizontalAlignment="Left"
-                      IsChecked="{Binding ActiveProject.TrimTypes}">
+                      IsChecked="{Binding ActiveProject.Options.TrimTypes}">
                 <TextBlock TextWrapping="Wrap">Removes type definitions that are not in use.</TextBlock>
             </CheckBox>
         </StackPanel>
@@ -63,9 +64,21 @@
             <CheckBox x:Name="MinifyCheckBox" 
                       Margin="2,8,2,2"
                       HorizontalAlignment="Left"
-                      IsChecked="{Binding ActiveProject.Minify}">
+                      IsChecked="{Binding ActiveProject.Options.Minify}">
                 <TextBlock TextWrapping="Wrap">Deployment will make your code as small as possible at the expense of readability.
                     Use only if you know your code won't fit conventionally. Warning: Slow deployment.</TextBlock>
+            </CheckBox>
+        </StackPanel>
+
+        <Label Grid.Column="0" Grid.Row="4" Target="{Binding ElementName=ExcludeFromDeployAllCheckBox}" Margin="2">Exclude from Deploy All</Label>
+        <StackPanel Grid.Column="1" Grid.Row="4" 
+                    Margin ="2,2,2,16">
+
+            <CheckBox x:Name="ExcludeFromDeployAllCheckBox" 
+                      Margin="2,8,2,2"
+                      HorizontalAlignment="Left"
+                      IsChecked="{Binding ActiveProject.Options.ExcludeFromDeployAll}">
+                <TextBlock TextWrapping="Wrap">This project will be ignored by the Deploy All command.</TextBlock>
             </CheckBox>
         </StackPanel>
 
@@ -76,7 +89,7 @@
                   ToolTip="Check to perform a minification of the script"
                   IsChecked="{Binding ActiveProject.Minify}" />-->
 
-        <views:ButtonBar Grid.ColumnSpan="2" Grid.Column="0" Grid.Row="4" VerticalAlignment="Bottom">
+        <views:ButtonBar Grid.ColumnSpan="2" Grid.Column="0" Grid.Row="5" VerticalAlignment="Bottom">
             <Button IsDefault="True" MinWidth="96" Margin="2,2,8,2" Command="{Binding SaveAndCloseCommand}">Update Options</Button>
             <Button IsCancel="True" MinWidth="96" Margin="0,2,2,2" Command="{Binding CancelCommand}">Cancel</Button>
         </views:ButtonBar>

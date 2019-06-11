@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using DocGen.XmlDocs;
 
@@ -67,7 +68,9 @@ namespace DocGen
 
         static ApiEntry ForConstructor(ProgrammableBlockApi api, Whitelist whitelist, ConstructorInfo constructorInfo)
         {
-            if (constructorInfo.IsSpecialName || !constructorInfo.IsPublic && !constructorInfo.IsFamily && !constructorInfo.IsFamilyOrAssembly && !constructorInfo.IsFamilyOrAssembly)
+            //if (constructorInfo.IsSpecialName || !constructorInfo.IsPublic && !constructorInfo.IsFamily && !constructorInfo.IsFamilyOrAssembly && !constructorInfo.IsFamilyOrAssembly)
+            //    return null;
+            if (!constructorInfo.IsPublic && !constructorInfo.IsFamily && !constructorInfo.IsFamilyOrAssembly && !constructorInfo.IsFamilyOrAssembly)
                 return null;
             var basis = api.GetEntry(constructorInfo.DeclaringType);
             var xmlDocKey = $"C{basis.XmlDocKey.Substring(1)}.{constructorInfo.Name}";
@@ -141,6 +144,8 @@ namespace DocGen
         static string XmlDocParameterStr(ProgrammableBlockApi api, ParameterInfo parameterInfo)
         {
             var type = parameterInfo.ParameterType.IsByRef || parameterInfo.ParameterType.IsPointer ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType;
+            if (type.IsGenericType && !type.IsGenericTypeDefinition)
+                type = type.GetGenericTypeDefinition();
             if (parameterInfo.ParameterType.IsByRef)
             {
                 if (type.FullName == null)
@@ -255,13 +260,16 @@ namespace DocGen
             throw new NotSupportedException();
         }
 
-        string ToParameterString(ParameterInfo parameterInfo, ApiEntryStringFlags flags)
+        string ToParameterString(ParameterInfo parameterInfo, int index, ApiEntryStringFlags flags)
         {
             var segments = new List<string>();
 
             if (flags.HasFlag(ApiEntryStringFlags.ParameterTypes))
             {
-                var prefix = parameterInfo.ParameterType.IsByRef ? "ref\u00A0" : parameterInfo.ParameterType.IsPointer ? "*" : parameterInfo.IsOut ? "out\u00A0" : "";
+                var prefix = "";
+                if (parameterInfo.Member.IsDefined(typeof(ExtensionAttribute), false) && index == 0)
+                    prefix += "this\u00A0";
+                prefix += parameterInfo.ParameterType.IsByRef ? "ref\u00A0" : parameterInfo.ParameterType.IsPointer ? "*" : parameterInfo.IsOut ? "out\u00A0" : "";
                 var type = parameterInfo.ParameterType.IsByRef || parameterInfo.ParameterType.IsPointer ? parameterInfo.ParameterType.GetElementType() : parameterInfo.ParameterType;
                 segments.Add(prefix + Api.GetEntry(type, true).ToString(ForSubCalls(flags)));
             }
@@ -298,7 +306,7 @@ namespace DocGen
             {
                 var parameters = constructorInfo.GetParameters();
                 buffer.Append("(");
-                buffer.Append(string.Join(", ", parameters.Select(p => ToParameterString(p, flags))));
+                buffer.Append(string.Join(", ", parameters.Select((p, i) => ToParameterString(p, i, flags))));
                 buffer.Append(")");
             }
 
@@ -351,7 +359,7 @@ namespace DocGen
             {
                 var parameters = methodInfo.GetParameters();
                 buffer.Append("(");
-                buffer.Append(string.Join(", ", parameters.Select(p => ToParameterString(p, flags))));
+                buffer.Append(string.Join(", ", parameters.Select((p, i) => ToParameterString(p, i, flags))));
                 buffer.Append(")");
             }
 

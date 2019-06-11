@@ -4,9 +4,9 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
+using System.Threading;
 using System.Threading.Tasks;
 using EnvDTE;
-using JetBrains.Annotations;
 using Malware.MDKServices;
 using MDK.Build;
 using MDK.Commands;
@@ -14,7 +14,8 @@ using MDK.Resources;
 using MDK.Services;
 using MDK.Views.BlueprintManager;
 using MDK.Views.BugReports;
-using MDK.Views.ProjectIntegrity;
+using MDK.Views.DeploymentBar;
+using MDK.Views.ProjectHealth;
 using MDK.Views.UpdateDetection;
 using MDK.VisualStudio;
 using Microsoft.VisualStudio;
@@ -26,15 +27,14 @@ namespace MDK
     /// <summary>
     ///     The MDK Visual Studio Extension
     /// </summary>
-    [PackageRegistration(UseManagedResourcesOnly = true)]
-    [InstalledProductRegistration("#110", "#112", "1.0", IconResourceID = 400)] // Info on this package for Help/About
+    [PackageRegistration(UseManagedResourcesOnly = true, AllowsBackgroundLoading = true)]
+    // [InstalledProductRegistration("#110", "#112", "1.2", IconResourceID = 400)] // Info on this package for Help/About
     [ProvideMenuResource("Menus.ctmenu", 1)]
     [Guid(PackageGuidString)]
     [SuppressMessage("StyleCop.CSharp.DocumentationRules", "SA1650:ElementDocumentationMustBeSpelledCorrectly", Justification = "pkgdef, VS and vsixmanifest are valid VS terms")]
     [ProvideOptionPage(typeof(MDKOptions), "MDK/SE", "Options", 0, 0, true)]
-//    [ProvideAutoLoad(UIContextGuids80.NoSolution)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionOpening_string)]
-    [ProvideAutoLoad(VSConstants.UICONTEXT.ShellInitialized_string)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.SolutionOpening_string, PackageAutoLoadFlags.BackgroundLoad)]
+    [ProvideAutoLoad(VSConstants.UICONTEXT.ShellInitialized_string, PackageAutoLoadFlags.BackgroundLoad)]
     public sealed partial class MDKPackage : ExtendedPackage
     {
         /// <summary>
@@ -45,14 +45,6 @@ namespace MDK
         bool _hasCheckedForUpdates;
         bool _isEnabled;
         SolutionManager _solutionManager;
-
-        /// <summary>
-        ///     Creates a new instance of <see cref="MDKPackage" />
-        /// </summary>
-        public MDKPackage()
-        {
-            ScriptUpgrades = new ScriptUpgrades();
-        }
 
         /// <summary>
         ///     Fired when the MDK features are enabled
@@ -98,11 +90,6 @@ namespace MDK
         public IServiceProvider ServiceProvider => this;
 
         /// <summary>
-        ///     The <see cref="ScriptUpgrades" /> service
-        /// </summary>
-        public ScriptUpgrades ScriptUpgrades { get; }
-
-        /// <summary>
         ///     Gets the installation path for the current MDK package
         /// </summary>
         public DirectoryInfo InstallPath { get; } = new FileInfo(new Uri(typeof(MDKPackage).Assembly.CodeBase).LocalPath).Directory;
@@ -119,8 +106,9 @@ namespace MDK
         ///     Initialization of the package; this method is called right after the package is sited, so this is the place
         ///     where you can put all the initialization code that rely on services provided by VisualStudio.
         /// </summary>
-        protected override void Initialize()
+        protected override async System.Threading.Tasks.Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             _solutionManager = new SolutionManager(this);
             _solutionManager.BeginRecording();
             _solutionManager.ProjectLoaded += OnProjectLoaded;
@@ -143,7 +131,92 @@ namespace MDK
 
             KnownUIContexts.ShellInitializedContext.WhenActivated(OnShellActivated);
 
-            base.Initialize();
+            await base.InitializeAsync(cancellationToken, progress);
+        }
+
+        void OnUpdateDetected(Version detectedVersion)
+        {
+            if (detectedVersion == null)
+                return;
+            UpdateDetectedDialog.ShowDialog(new UpdateDetectedDialogModel(detectedVersion));
+        }
+
+        void OnShellActivated()
+        {
+            _solutionManager.EndRecording();
+        }
+
+        void OnSolutionClosed(object sender, EventArgs e)
+        {
+            IsEnabled = false;
+        }
+
+        void OnSolutionLoaded(object sender, EventArgs e)
+        {
+            OnSolutionLoaded(DTE.Solution);
+        }
+
+        void OnProjectLoaded(object sender, ProjectLoadedEventArgs e)
+        {
+            if (e.IsStandalone)
+                OnProjectLoaded(e.Project);
+        }
+
+        async void OnProjectLoaded(Project project)
+        {
+            HealthAnalysis analysis;
+            try
+            {
+                analysis = await HealthAnalysis.AnalyzeAsync(project, GetAnalysisOptions());
+            }
+            catch (Exception e)
+            {
+                ShowError(Text.MDKPackage_OnProjectLoaded_ErrorAnalyzingProject, string.Format(Text.MDKPackage_OnProjectLoaded_ErrorAnalyzingProject_Description, project?.Name), e);
+                IsEnabled = false;
+                return;
+            }
+
+            if (!analysis.IsMDKProject)
+                return;
+            IsEnabled = true;
+
+            if (analysis.IsHealthy)
+                return;
+
+            PresentAnalysisResults(analysis);
+        }
+
+        async void OnSolutionLoaded(Solution solution)
+        {
+            HealthAnalysis[] analyses;
+            try
+            {
+                analyses = await HealthAnalysis.AnalyzeAsync(solution, GetAnalysisOptions());
+            }
+            catch (Exception e)
+            {
+                ShowError(Text.MDKPackage_OnSolutionLoaded_ErrorAnalyzingSolution, Text.MDKPackage_OnSolutionLoaded_ErrorAnalyzingSolution_Description, e);
+                IsEnabled = false;
+                return;
+            }
+
+            if (!analyses.Any(analysis => analysis.IsMDKProject))
+            {
+                IsEnabled = false;
+                return;
+            }
+
+            IsEnabled = true;
+
+            var unhealtyProjects = analyses.Where(analysis => analysis.IsMDKProject && !analysis.IsHealthy).ToArray();
+            if (unhealtyProjects.Any())
+                PresentAnalysisResults(unhealtyProjects);
+
+            if (!_hasCheckedForUpdates)
+            {
+                _hasCheckedForUpdates = true;
+                CheckForUpdatesAsync();
+            }
         }
 
         async void CheckForUpdatesAsync()
@@ -190,113 +263,23 @@ namespace MDK
             }
         }
 
-        void OnUpdateDetected(Version detectedVersion)
-        {
-            if (detectedVersion == null)
-                return;
-            UpdateDetectedDialog.ShowDialog(new UpdateDetectedDialogModel(detectedVersion));
-        }
-
-        void OnShellActivated()
-        {
-            _solutionManager.EndRecording();
-        }
-
-        void OnSolutionClosed(object sender, EventArgs e)
-        {
-            IsEnabled = false;
-        }
-
-        void OnSolutionLoaded(object sender, EventArgs e)
-        {
-            OnSolutionLoaded(DTE.Solution);
-        }
-
-        void OnProjectLoaded(object sender, ProjectLoadedEventArgs e)
-        {
-            if (e.IsStandalone)
-                OnProjectLoaded(e.Project);
-        }
-
-        async void OnProjectLoaded(Project project)
-        {
-            ScriptSolutionAnalysisResult result;
-            try
+        HealthAnalysisOptions GetAnalysisOptions() =>
+            new HealthAnalysisOptions
             {
-                result = await ScriptUpgrades.AnalyzeAsync(project, new ScriptUpgradeAnalysisOptions
-                {
-                    DefaultGameBinPath = Options.GetActualGameBinPath(),
-                    InstallPath = InstallPath.FullName,
-                    TargetVersion = Version,
-                    GameAssemblyNames = GameAssemblyNames,
-                    GameFiles = GameFiles,
-                    UtilityAssemblyNames = UtilityAssemblyNames,
-                    UtilityFiles = UtilityFiles
-                });
-            }
-            catch (Exception e)
-            {
-                ShowError(Text.MDKPackage_OnProjectLoaded_ErrorAnalyzingProject, string.Format(Text.MDKPackage_OnProjectLoaded_ErrorAnalyzingProject_Description, project?.Name), e);
-                IsEnabled = false;
-                return;
-            }
+                DefaultGameBinPath = Options.GetActualGameBinPath(),
+                DefaultOutputPath = Options.GetActualOutputPath(),
+                InstallPath = InstallPath.FullName,
+                TargetVersion = Version,
+                GameAssemblyNames = GameAssemblyNames,
+                GameFiles = GameFiles,
+                UtilityAssemblyNames = UtilityAssemblyNames,
+                UtilityFiles = UtilityFiles
+            };
 
-            if (!result.HasScriptProjects)
-                return;
-            IsEnabled = true;
-            if (result.IsValid)
-                return;
-
-            QueryUpgrade(this, result);
-        }
-
-        void QueryUpgrade([NotNull] MDKPackage package, ScriptSolutionAnalysisResult result)
+        void PresentAnalysisResults(params HealthAnalysis[] analysis)
         {
-            if (package == null)
-                throw new ArgumentNullException(nameof(package));
-            var model = new RequestUpgradeDialogModel(package, result);
-            RequestUpgradeDialog.ShowDialog(model);
-        }
-
-        async void OnSolutionLoaded(Solution solution)
-        {
-            ScriptSolutionAnalysisResult result;
-            try
-            {
-                result = await ScriptUpgrades.AnalyzeAsync(solution, new ScriptUpgradeAnalysisOptions
-                {
-                    DefaultGameBinPath = Options.GetActualGameBinPath(),
-                    InstallPath = InstallPath.FullName,
-                    TargetVersion = Version,
-                    GameAssemblyNames = GameAssemblyNames,
-                    GameFiles = GameFiles,
-                    UtilityAssemblyNames = UtilityAssemblyNames,
-                    UtilityFiles = UtilityFiles
-                });
-            }
-            catch (Exception e)
-            {
-                ShowError(Text.MDKPackage_OnSolutionLoaded_ErrorAnalyzingSolution, Text.MDKPackage_OnSolutionLoaded_ErrorAnalyzingSolution_Description, e);
-                IsEnabled = false;
-                return;
-            }
-
-            if (!result.HasScriptProjects)
-            {
-                IsEnabled = false;
-                return;
-            }
-
-            IsEnabled = true;
-
-            if (!result.IsValid)
-                QueryUpgrade(this, result);
-
-            if (!_hasCheckedForUpdates)
-            {
-                _hasCheckedForUpdates = true;
-                CheckForUpdatesAsync();
-            }
+            var model = new ProjectHealthDialogModel(this, analysis);
+            ProjectHealthDialog.ShowDialog(model);
         }
 
         /// <summary>
@@ -359,7 +342,7 @@ namespace MDK
                     title = string.Format(Text.MDKPackage_Deploy_DeployingSingleScript, Path.GetFileName(project.FullName));
                 else
                     title = Text.MDKPackage_Deploy_DeployingAllScripts;
-                ProjectScriptInfo[] deployedScripts;
+                MDKProjectProperties[] deployedScripts;
                 using (var statusBar = new StatusBarProgressBar(ServiceProvider, title, 100))
                 using (new StatusBarAnimation(ServiceProvider, Animation.Deploy))
                 {
@@ -371,15 +354,12 @@ namespace MDK
                 {
                     if (!nonBlocking && Options.ShowBlueprintManagerOnDeploy)
                     {
-                        var distinctPaths = deployedScripts.Select(script => FormattedPath(script.OutputPath)).Distinct().ToArray();
-                        if (distinctPaths.Length == 1)
+                        var bar = new DeploymentBar
                         {
-                            var model = new BlueprintManagerDialogModel(Text.MDKPackage_Deploy_Description,
-                                distinctPaths[0], deployedScripts.Select(s => s.Name));
-                            BlueprintManagerDialog.ShowDialog(model);
-                        }
-                        else
-                            VsShellUtilities.ShowMessageBox(ServiceProvider, Text.MDKPackage_Deploy_DeploymentCompleteDescription, Text.MDKPackage_Deploy_DeploymentComplete, OLEMSGICON.OLEMSGICON_INFO, OLEMSGBUTTON.OLEMSGBUTTON_OK, OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+                            DeployedScripts = deployedScripts,
+                            CanShowMe = deployedScripts.Select(script => FormattedPath(script.Paths.OutputPath)).Distinct().Count() == 1
+                        };
+                        bar.ShowAsync(ServiceProvider);
                     }
                 }
                 else

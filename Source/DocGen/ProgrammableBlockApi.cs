@@ -45,6 +45,7 @@ namespace DocGen
             var api = new ProgrammableBlockApi();
             await Task.Run(() =>
             {
+                var types = new List<Type>();
                 var members = new List<MemberInfo>();
                 var spaceEngineers = new SpaceEngineers();
                 var installPath = Path.Combine(spaceEngineers.GetInstallPath(), "bin64");
@@ -63,18 +64,31 @@ namespace DocGen
 
                 // Hack. I'm getting duplicated entries and atm I cannot be bothered to do a proper check
                 // for why...
-                HashSet<MemberInfo> visitedMembers = new HashSet<MemberInfo>();
+                var visitedMembers = new HashSet<MemberInfo>();
 
                 foreach (var assemblyGroup in members.GroupBy(m => m.GetAssembly()))
                 {
                     foreach (var typeGroup in assemblyGroup.GroupBy(m => m.DeclaringType))
                     {
+                        if (typeGroup.Key == null)
+                        {
+                            foreach (var type in typeGroup)
+                            {
+                                var entry = api.GetEntry(type);
+                                if (!api._entries.Contains(entry))
+                                    api._entries.Add(entry);
+                            }
+
+                            continue;
+                        }
+
                         var typeEntry = api.GetEntry(typeGroup.Key);
                         if (typeEntry != null)
                         {
                             if (!visitedMembers.Add(typeEntry.Member))
                                 continue;
-                            api._entries.Add(typeEntry);
+                            if (!api._entries.Contains(typeEntry))
+                                api._entries.Add(typeEntry);
                             foreach (var member in typeGroup)
                             {
                                 var entry = api.GetEntry(member);
@@ -105,8 +119,8 @@ namespace DocGen
             var companyAttribute = assembly.GetCustomAttribute<AssemblyCompanyAttribute>();
             if (companyAttribute?.Company == "Microsoft Corporation")
                 return;
-            var types = assembly.GetExportedTypes();
-            foreach (var type in types)
+            var exportedTypes = assembly.GetExportedTypes();
+            foreach (var type in exportedTypes)
                 Visit(whitelist, type, members);
         }
 
@@ -114,6 +128,7 @@ namespace DocGen
         {
             if (!type.IsPublic() || !whitelist.IsWhitelisted(type))
                 return;
+            members.Add(type);
             var typeMembers = type.GetMembers(BindingFlags.Static | BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.DeclaredOnly);
             foreach (var member in typeMembers)
                 Visit(whitelist, member, members);
@@ -155,10 +170,21 @@ namespace DocGen
 
             string docFileName = null;
             if (memberInfo is Type type)
+            {
+                if (type.IsGenericType)
+                {
+                    type = type.GetGenericTypeDefinition();
+                }
                 docFileName = Path.ChangeExtension(new Uri(type.Assembly.CodeBase).LocalPath, "xml");
+            }
             else
             {
-                var codeBase = memberInfo.DeclaringType?.Assembly.CodeBase;
+                type = memberInfo.DeclaringType;
+                if (type?.IsGenericType ?? false)
+                {
+                    type = type.GetGenericTypeDefinition();
+                }
+                var codeBase = type?.Assembly.CodeBase;
                 if (codeBase != null)
                     docFileName = Path.ChangeExtension(new Uri(codeBase).LocalPath, "xml");
             }
@@ -176,11 +202,6 @@ namespace DocGen
 
         public ApiEntry GetEntry(MemberInfo memberInfo, bool includeBlacklisted = false)
         {
-            if (memberInfo is Type type && type.IsGenericType)
-            {
-                memberInfo = type.GetGenericTypeDefinition();
-            }
-
             if (_entryLookup.TryGetValue(memberInfo, out var entry))
             {
                 if (entry != null || includeBlacklisted && _blacklistedEntryLookup.TryGetValue(memberInfo, out entry))

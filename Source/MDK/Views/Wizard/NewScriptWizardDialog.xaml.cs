@@ -20,7 +20,7 @@ namespace MDK.Views.Wizard
         }
 
         /// <summary>
-        /// Creates a new instance of the <see cref="ProjectIntegrity.RequestUpgradeDialog"/>
+        /// Creates a new instance of the <see cref="NewScriptWizardDialog"/>
         /// </summary>
         public NewScriptWizardDialog()
         {

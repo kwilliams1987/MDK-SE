@@ -4,9 +4,9 @@ using System.Collections.Immutable;
 namespace Malware.MDKServices
 {
     /// <summary>
-    /// Options for the <see cref="ScriptUpgrades"/> analysis methods
+    /// Options for the <see cref="HealthAnalysis"/> analysis methods
     /// </summary>
-    public struct ScriptUpgradeAnalysisOptions
+    public struct HealthAnalysisOptions
     {
         /// <summary>
         /// The default path to the game binaries
@@ -17,6 +17,11 @@ namespace Malware.MDKServices
         /// The default install path (for the utility assemblies etc.)
         /// </summary>
         public string InstallPath;
+
+        /// <summary>
+        /// The default path to put the deployed scripts.
+        /// </summary>
+        public string DefaultOutputPath;
 
         /// <summary>
         /// The target extension version

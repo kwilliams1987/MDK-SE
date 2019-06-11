@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -10,24 +11,36 @@ namespace DocGen.MarkdownGenerators
 {
     class MemberGenerator : DocumentGenerator
     {
-        static bool IsMsType(MemberInfo memberInfo)
-        {
-            var assembly = memberInfo.GetAssembly();
-            if (assembly.GetName().Name == "mscorlib")
-                return true;
-            var companyAttribute = assembly.GetCustomAttribute<AssemblyCompanyAttribute>();
-            if (companyAttribute?.Company == "Microsoft Corporation")
-                return true;
-            return false;
-        }
+        //static bool IsMsType(MemberInfo memberInfo)
+        //{
+        //    var assembly = memberInfo.GetAssembly();
+        //    if (assembly.GetName().Name == "mscorlib")
+        //        return true;
+        //    var companyAttribute = assembly.GetCustomAttribute<AssemblyCompanyAttribute>();
+        //    if (companyAttribute?.Company == "Microsoft Corporation")
+        //        return true;
+        //    return false;
+        //}
 
         public static string LinkTo(string text, ApiEntry entry)
         {
             if (ShouldBeIgnored(entry))
                 return text;
 
-            if (IsMsType(entry.Member))
-                return MarkdownInline.HRef(text, $"https://docs.microsoft.com/en-us/dotnet/api/{entry.FullName.ToLower()}?view=netframework-4.6");
+            if (MicrosoftLink.IsMsType(entry.Member))
+            {
+                var type = entry.Member as Type;
+                var fullName = entry.FullName;
+                if (type != null)
+                {
+                    if (type.IsGenericType && !type.IsGenericTypeDefinition)
+                        type = type.GetGenericTypeDefinition();
+                    fullName = type.FullName?.Replace('`', '-');
+                }
+
+                return MarkdownInline.HRef(text, $"https://docs.microsoft.com/en-us/dotnet/api/{fullName}?view=netframework-4.6");
+            }
+
             return MarkdownInline.HRef(text, Path.GetFileNameWithoutExtension(entry.SuggestedFileName));
         }
 
@@ -212,7 +225,7 @@ namespace DocGen.MarkdownGenerators
                 await writer.WriteHeaderAsync(3, "Parameters");
                 foreach (var parameter in parameters)
                 {
-                    var returnEntry = api.GetEntry(parameter.ParameterType, true);
+                    var returnEntry = api.GetEntry(parameter.GetActualParameterType(), true);
                     await writer.WriteAsync("* ");
                     await writer.WriteAsync(LinkTo(returnEntry.ToString(ApiEntryStringFlags.ShortDisplayName), returnEntry));
                     await writer.WriteAsync(" ");

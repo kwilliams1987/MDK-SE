@@ -79,7 +79,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Are you sure you want to delete the blueprint {0}?.
+        ///   Looks up a localized string similar to Are you sure you want to delete the script {0}?.
         /// </summary>
         internal static string BlueprintManagerDialog_OnDeletingBlueprint_Description {
             get {
@@ -88,7 +88,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Delete Blueprint.
+        ///   Looks up a localized string similar to Delete Script.
         /// </summary>
         internal static string BlueprintManagerDialog_OnDeletingBlueprint_Title {
             get {
@@ -106,7 +106,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The blueprint was copied to the clipboard..
+        ///   Looks up a localized string similar to The script was copied to the clipboard..
         /// </summary>
         internal static string BlueprintManagerDialogModel_CopyToClipboard_Copy_Description {
             get {
@@ -124,7 +124,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An unexpected error occurred during the attempt to copy the blueprint.
+        ///   Looks up a localized string similar to An unexpected error occurred during the attempt to copy the script.
         ///
         ///{0}.
         /// </summary>
@@ -135,7 +135,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Error Deleting Blueprint.
+        ///   Looks up a localized string similar to Error Deleting Script.
         /// </summary>
         internal static string BlueprintManagerDialogModel_Delete_Error {
             get {
@@ -144,7 +144,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An unexpected error occurred during the attempt to delete the blueprint.
+        ///   Looks up a localized string similar to An unexpected error occurred during the attempt to delete the script.
         ///
         ///{0}.
         /// </summary>
@@ -155,7 +155,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Couldn&apos;t Delete Blueprint.
+        ///   Looks up a localized string similar to Couldn&apos;t Delete Script.
         /// </summary>
         internal static string BlueprintModel_Delete_Error {
             get {
@@ -164,7 +164,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The blueprint {0} could not be deleted:
+        ///   Looks up a localized string similar to The script {0} could not be deleted:
         ///
         ///{1}.
         /// </summary>
@@ -431,7 +431,7 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to The emphasized blueprints are the ones that were just deployed..
+        ///   Looks up a localized string similar to The emphasized scripts are the ones that were just deployed..
         /// </summary>
         internal static string MDKPackage_Deploy_Description {
             get {
@@ -539,6 +539,69 @@ namespace MDK.Resources {
         }
         
         /// <summary>
+        ///   Looks up a localized string similar to Backups have been stored in the projects&apos; parent folders..
+        /// </summary>
+        internal static string ProjectHealthDialog_OnUpgradeCompleted_BackupsStoredMessage {
+            get {
+                return ResourceManager.GetString("ProjectHealthDialog_OnUpgradeCompleted_BackupsStoredMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The following MDK projects must be upgraded in order to function correctly. Do you wish to do this now?.
+        /// </summary>
+        internal static string ProjectHealthDialogModel_DefaultMessage {
+            get {
+                return ResourceManager.GetString("ProjectHealthDialogModel_DefaultMessage", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Upgrade Failed.
+        /// </summary>
+        internal static string ProjectHealthDialogModel_OnSave_Error {
+            get {
+                return ResourceManager.GetString("ProjectHealthDialogModel_OnSave_Error", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to An unexpected error occurred during the attempt to upgrade the project(s)..
+        /// </summary>
+        internal static string ProjectHealthDialogModel_OnSave_Error_Description {
+            get {
+                return ResourceManager.GetString("ProjectHealthDialogModel_OnSave_Error_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to The upgrade process has been completed. It is recommended that you do a complete Build|Clean Solution + Build|Rebuild Solution to make sure all Visual Studio caches are updated..
+        /// </summary>
+        internal static string ProjectHealthDialogModel_RunUpgrades_Description {
+            get {
+                return ResourceManager.GetString("ProjectHealthDialogModel_RunUpgrades_Description", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Upgrade Complete.
+        /// </summary>
+        internal static string ProjectHealthDialogModel_RunUpgrades_UpgradeComplete {
+            get {
+                return ResourceManager.GetString("ProjectHealthDialogModel_RunUpgrades_UpgradeComplete", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Bad Options File - was tagged as outdated, but can&apos;t find the right upgrade tool for version {0}.
+        /// </summary>
+        internal static string ProjectHealthDialogModel_Upgrade_BadUpgradeVersion {
+            get {
+                return ResourceManager.GetString("ProjectHealthDialogModel_Upgrade_BadUpgradeVersion", resourceCulture);
+            }
+        }
+        
+        /// <summary>
         ///   Looks up a localized string similar to No MDK Projects.
         /// </summary>
         internal static string ProjectOptionsCommand_OnExecute_NoMDKProjects {
@@ -557,20 +620,20 @@ namespace MDK.Resources {
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to Upgrade Failed.
+        ///   Looks up a localized string similar to The whitelist caches have been updated. You might need to rebuild your project for any changes to take effect..
         /// </summary>
-        internal static string RequestUpgradeDialogModel_OnSave_Error {
+        internal static string RefreshWhitelistCacheCommand_OnExecute_UpdatedWhitelistsDescription {
             get {
-                return ResourceManager.GetString("RequestUpgradeDialogModel_OnSave_Error", resourceCulture);
+                return ResourceManager.GetString("RefreshWhitelistCacheCommand_OnExecute_UpdatedWhitelistsDescription", resourceCulture);
             }
         }
         
         /// <summary>
-        ///   Looks up a localized string similar to An unexpected error occurred during the attempt to upgrade the project(s)..
+        ///   Looks up a localized string similar to Whitelist Caches Updated.
         /// </summary>
-        internal static string RequestUpgradeDialogModel_OnSave_Error_Description {
+        internal static string RefreshWhitelistCacheCommand_OnExecute_UpdatedWhitelistsTitle {
             get {
-                return ResourceManager.GetString("RequestUpgradeDialogModel_OnSave_Error_Description", resourceCulture);
+                return ResourceManager.GetString("RefreshWhitelistCacheCommand_OnExecute_UpdatedWhitelistsTitle", resourceCulture);
             }
         }
         
@@ -580,6 +643,15 @@ namespace MDK.Resources {
         internal static string TypeTrimmer_ProcessAsync_NoEntryPoint {
             get {
                 return ResourceManager.GetString("TypeTrimmer_ProcessAsync_NoEntryPoint", resourceCulture);
+            }
+        }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Error loading the original project file.
+        /// </summary>
+        internal static string UpgradeFrom1_1_Upgrade_ErrorLoadingProject {
+            get {
+                return ResourceManager.GetString("UpgradeFrom1_1_Upgrade_ErrorLoadingProject", resourceCulture);
             }
         }
     }

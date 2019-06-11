@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Media.Imaging;
 using MDK.Resources;
@@ -15,6 +17,8 @@ namespace MDK.Views.BlueprintManager
     /// </summary>
     public class BlueprintManagerDialogModel : DialogViewModel
     {
+        static readonly string[] ThumbFileNames = {"thumb.png", "thumb.jpg", "thumb.jpeg"};
+
         string _blueprintPath;
         BlueprintModel _selectedBlueprint;
         HashSet<string> _significantBlueprints;
@@ -204,8 +208,8 @@ namespace MDK.Views.BlueprintManager
                         continue;
 
                     BitmapImage icon = null;
-                    var thumbFileName = Path.Combine(folder.FullName, "thumb.png");
-                    if (File.Exists(thumbFileName))
+                    var thumbFileName = ThumbFileNames.Select(name => Path.Combine(folder.FullName, name)).FirstOrDefault(File.Exists);
+                    if (thumbFileName != null)
                     {
                         icon = new BitmapImage();
                         icon.BeginInit();
@@ -225,10 +229,7 @@ namespace MDK.Views.BlueprintManager
 
         /// <inheritdoc />
         /// <returns></returns>
-        protected override bool OnSave()
-        {
-            return true;
-        }
+        protected override bool OnSave() => true;
 
         /// <summary>
         /// Sends a message through the user interface to the end-user.

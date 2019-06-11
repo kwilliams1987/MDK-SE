@@ -197,33 +197,33 @@
     <value>Name cannot be empty or contain any of the following characters: {0}</value>
   </data>
   <data name="BlueprintManagerDialogModel_Delete_Error" xml:space="preserve">
-    <value>Error Deleting Blueprint</value>
+    <value>Error Deleting Script</value>
   </data>
   <data name="BlueprintManagerDialogModel_Delete_Error_Description" xml:space="preserve">
-    <value>An unexpected error occurred during the attempt to delete the blueprint.
+    <value>An unexpected error occurred during the attempt to delete the script.
 
 {0}</value>
   </data>
   <data name="BlueprintManagerDialog_OnDeletingBlueprint_Description" xml:space="preserve">
-    <value>Are you sure you want to delete the blueprint {0}?</value>
+    <value>Are you sure you want to delete the script {0}?</value>
   </data>
   <data name="BlueprintManagerDialog_OnDeletingBlueprint_Title" xml:space="preserve">
-    <value>Delete Blueprint</value>
+    <value>Delete Script</value>
   </data>
   <data name="MDKPackage_Deploy_Description" xml:space="preserve">
-    <value>The emphasized blueprints are the ones that were just deployed.</value>
+    <value>The emphasized scripts are the ones that were just deployed.</value>
   </data>
-  <data name="RequestUpgradeDialogModel_OnSave_Error" xml:space="preserve">
+  <data name="ProjectHealthDialogModel_OnSave_Error" xml:space="preserve">
     <value>Upgrade Failed</value>
   </data>
-  <data name="RequestUpgradeDialogModel_OnSave_Error_Description" xml:space="preserve">
+  <data name="ProjectHealthDialogModel_OnSave_Error_Description" xml:space="preserve">
     <value>An unexpected error occurred during the attempt to upgrade the project(s).</value>
   </data>
   <data name="BlueprintModel_Delete_Error" xml:space="preserve">
-    <value>Couldn't Delete Blueprint</value>
+    <value>Couldn't Delete Script</value>
   </data>
   <data name="BlueprintModel_Error_Description" xml:space="preserve">
-    <value>The blueprint {0} could not be deleted:
+    <value>The script {0} could not be deleted:
 
 {1}</value>
   </data>
@@ -284,7 +284,7 @@
     <value>Error Copying Script</value>
   </data>
   <data name="BlueprintManagerDialogModel_CopyToClipboard_Copy_Error_Description" xml:space="preserve">
-    <value>An unexpected error occurred during the attempt to copy the blueprint.
+    <value>An unexpected error occurred during the attempt to copy the script.
 
 {0}</value>
   </data>
@@ -292,9 +292,33 @@
     <value>Copy</value>
   </data>
   <data name="BlueprintManagerDialogModel_CopyToClipboard_Copy_Description" xml:space="preserve">
-    <value>The blueprint was copied to the clipboard.</value>
+    <value>The script was copied to the clipboard.</value>
   </data>
   <data name="TypeTrimmer_ProcessAsync_NoEntryPoint" xml:space="preserve">
     <value>Unable to find Program entry point for {0}</value>
+  </data>
+  <data name="ProjectHealthDialogModel_DefaultMessage" xml:space="preserve">
+    <value>The following MDK projects must be upgraded in order to function correctly. Do you wish to do this now?</value>
+  </data>
+  <data name="ProjectHealthDialogModel_Upgrade_BadUpgradeVersion" xml:space="preserve">
+    <value>Bad Options File - was tagged as outdated, but can't find the right upgrade tool for version {0}</value>
+  </data>
+  <data name="UpgradeFrom1_1_Upgrade_ErrorLoadingProject" xml:space="preserve">
+    <value>Error loading the original project file</value>
+  </data>
+  <data name="ProjectHealthDialog_OnUpgradeCompleted_BackupsStoredMessage" xml:space="preserve">
+    <value>Backups have been stored in the projects' parent folders.</value>
+  </data>
+  <data name="RefreshWhitelistCacheCommand_OnExecute_UpdatedWhitelistsDescription" xml:space="preserve">
+    <value>The whitelist caches have been updated. You might need to rebuild your project for any changes to take effect.</value>
+  </data>
+  <data name="RefreshWhitelistCacheCommand_OnExecute_UpdatedWhitelistsTitle" xml:space="preserve">
+    <value>Whitelist Caches Updated</value>
+  </data>
+  <data name="ProjectHealthDialogModel_RunUpgrades_UpgradeComplete" xml:space="preserve">
+    <value>Upgrade Complete</value>
+  </data>
+  <data name="ProjectHealthDialogModel_RunUpgrades_Description" xml:space="preserve">
+    <value>The upgrade process has been completed. It is recommended that you do a complete Build|Clean Solution + Build|Rebuild Solution to make sure all Visual Studio caches are updated.</value>
   </data>
 </root>

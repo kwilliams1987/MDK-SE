@@ -4,8 +4,7 @@ using System.Collections.Immutable;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Runtime.InteropServices.ComTypes;
-using System.Xml.Linq;
+using Malware.MDKServices;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
 using Microsoft.CodeAnalysis.CSharp.Syntax;
@@ -22,7 +21,7 @@ namespace Malware.MDKAnalyzer
             = new DiagnosticDescriptor("MissingWhitelistRule", "Missing Or Corrupted Whitelist Cache", "The whitelist cache could not be loaded. Please run Tools | MDK | Refresh Whitelist Cache to attempt repair.", "Whitelist", DiagnosticSeverity.Error, true);
 
         internal static readonly DiagnosticDescriptor NoOptionsRule
-            = new DiagnosticDescriptor("MissingOptionsRule", "Missing Or Corrupted Options", "The MDK.options could not be loaded.", "Whitelist", DiagnosticSeverity.Error, true);
+            = new DiagnosticDescriptor("MissingOptionsRule", "Missing Or Corrupted Options", "The MDK.options.props could not be loaded.", "Whitelist", DiagnosticSeverity.Error, true);
 
         internal static readonly DiagnosticDescriptor ProhibitedMemberRule
             = new DiagnosticDescriptor("ProhibitedMemberRule", "Prohibited Type Or Member", "The type or member '{0}' is prohibited in Space Engineers", "Whitelist", DiagnosticSeverity.Error, true);
@@ -54,7 +53,7 @@ namespace Malware.MDKAnalyzer
 
         void LoadWhitelist(CompilationStartAnalysisContext context)
         {
-            var mdkOptions = context.Options.AdditionalFiles.FirstOrDefault(file => Path.GetFileName(file.Path).Equals("mdk.options", StringComparison.CurrentCultureIgnoreCase));
+            var mdkOptions = context.Options.AdditionalFiles.FirstOrDefault(file => Path.GetFileName(file.Path).Equals("mdk.options.props", StringComparison.CurrentCultureIgnoreCase));
             if (mdkOptions == null || !LoadOptions(context, mdkOptions))
             {
                 context.RegisterSemanticModelAction(c =>
@@ -88,7 +87,8 @@ namespace Malware.MDKAnalyzer
                 SyntaxKind.AliasQualifiedName,
                 SyntaxKind.QualifiedName,
                 SyntaxKind.GenericName,
-                SyntaxKind.IdentifierName);
+                SyntaxKind.IdentifierName,
+                SyntaxKind.DestructorDeclaration);
             context.RegisterSyntaxNodeAction(AnalyzeDeclaration,
                 SyntaxKind.PropertyDeclaration,
                 SyntaxKind.VariableDeclaration,
@@ -122,40 +122,28 @@ namespace Malware.MDKAnalyzer
             try
             {
                 var content = mdkOptions.GetText(context.CancellationToken);
-                var document = XDocument.Parse(content.ToString());
-                var ignoredFolders = document.Element("mdk")?.Elements("ignore").SelectMany(e => e.Elements("folder"));
-                var ignoredFiles = document.Element("mdk")?.Elements("ignore").SelectMany(e => e.Elements("file")).ToArray();
-                var basePath = Path.GetDirectoryName(mdkOptions.Path).TrimEnd('\\') + "\\..\\";
+                var properties = MDKProjectOptions.Parse(content.ToString(), mdkOptions.Path);
+                var basePath = Path.GetFullPath(Path.GetDirectoryName(mdkOptions.Path) ?? ".").TrimEnd('\\') + "\\..\\";
                 if (!basePath.EndsWith("\\"))
                     basePath += "\\";
 
                 _basePath = new Uri(basePath);
-                _namespaceName = (string)document.Element("mdk")?.Element("namespace") ?? DefaultNamespaceName;
+                _namespaceName = properties.Namespace ?? DefaultNamespaceName;
                 lock (_ignoredFolders)
                 lock (_ignoredFiles)
                 {
                     _ignoredFolders.Clear();
                     _ignoredFiles.Clear();
-                    if (ignoredFolders != null)
+                    foreach (var folder in properties.IgnoredFolders)
                     {
-                        foreach (var folderElement in ignoredFolders)
-                        {
-                            var folder = folderElement.Value;
-                            if (!folder.EndsWith("\\"))
-                                _ignoredFolders.Add(new Uri(_basePath, new Uri(folder + "\\", UriKind.RelativeOrAbsolute)));
-                            else
-                                _ignoredFolders.Add(new Uri(_basePath, new Uri(folder, UriKind.RelativeOrAbsolute)));
-                        }
+                        if (!folder.EndsWith("\\"))
+                            _ignoredFolders.Add(new Uri(_basePath, new Uri(folder + "\\", UriKind.RelativeOrAbsolute)));
+                        else
+                            _ignoredFolders.Add(new Uri(_basePath, new Uri(folder, UriKind.RelativeOrAbsolute)));
                     }
 
-                    if (ignoredFiles != null)
-                    {
-                        foreach (var fileElement in ignoredFiles)
-                        {
-                            var file = fileElement.Value;
-                            _ignoredFiles.Add(new Uri(_basePath, new Uri(file, UriKind.RelativeOrAbsolute)));
-                        }
-                    }
+                    foreach (var file in properties.IgnoredFiles)
+                        _ignoredFiles.Add(new Uri(_basePath, new Uri(file, UriKind.RelativeOrAbsolute)));
                 }
 
                 return true;
@@ -219,11 +207,10 @@ namespace Malware.MDKAnalyzer
                 return;
             }
 
-            // The exception finally clause cannot be allowed ingame because it can be used
-            // to circumvent the instruction counter exception and crash the game
-            if (node.Kind() == SyntaxKind.FinallyClause)
+            // Destructors are unpredictable so they cannot be allowed
+            if (node.Kind() == SyntaxKind.DestructorDeclaration)
             {
-                var kw = ((FinallyClauseSyntax)node).FinallyKeyword;
+                var kw = ((DestructorDeclarationSyntax)node).Identifier;
                 var diagnostic = Diagnostic.Create(ProhibitedLanguageElementRule, kw.GetLocation(), kw.ToString());
                 context.ReportDiagnostic(diagnostic);
                 return;

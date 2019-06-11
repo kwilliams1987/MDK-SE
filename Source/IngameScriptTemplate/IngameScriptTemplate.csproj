@@ -45,21 +45,19 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="Microsoft.VisualStudio.CoreUtility">
-      <Private>False</Private>
-    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Data" />
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="MDK\MDK.options" />
+    <None Include="MDK\MDK.options.props" />
+    <None Include="MDK\MDK.paths.props" />
     <None Include="MDK\whitelist.cache" />
     <None Include="Program.cs" />
     <None Include="MDK\Bootstrapper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <None Include="Readme.cs" />
+    <None Include="Instructions.readme" />
   </ItemGroup>
   <ItemGroup>
     <None Include="ProjectTemplate.csproj">
@@ -70,7 +68,7 @@
   <ItemGroup>
     <VSTemplate Include="IngameScript.vstemplate">
       <SubType>Designer</SubType>
-      <OutputSubPath>Space Engineers</OutputSubPath>
+      <OutputSubPath>Space Engineers\ProgrammableBlock</OutputSubPath>
     </VSTemplate>
   </ItemGroup>
   <ItemGroup>
